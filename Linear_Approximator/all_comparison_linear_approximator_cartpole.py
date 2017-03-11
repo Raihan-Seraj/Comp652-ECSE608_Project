@@ -15,6 +15,7 @@ from sklearn.linear_model import SGDRegressor
 from sklearn.kernel_approximation import RBFSampler
 from collections import namedtuple
 
+import matplotlib.pyplot as plt
 
 
 
@@ -118,7 +119,7 @@ def q_learning(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.1, e
 		episode_rewards=np.zeros(num_episodes))  
 
 	for i_episode in range(num_episodes):
-		print "Episode Number, Q Learning Linear Approximator CartPole:", i_episode
+		print "Episode Number, Q Learning:", i_episode
 		#agent policy based on the greedy maximisation of Q
 		policy = make_epsilon_greedy_policy(estimator, epsilon * epsilon_decay**i_episode, env.action_space.n)
 		last_reward = stats.episode_rewards[i_episode - 1]
@@ -160,7 +161,7 @@ def sarsa(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.1, epsilo
 	stats = plotting.EpisodeStats(episode_lengths=np.zeros(num_episodes), episode_rewards=np.zeros(num_episodes))
 
 	for i_episode in range(num_episodes):
-		print "Episode Number, SARSA Linear Approximator CartPole:", i_episode
+		print "Episode Number, SARSA:", i_episode
 		policy = make_epsilon_greedy_policy(estimator, epsilon * epsilon_decay**i_episode, env.action_space.n)
 		last_reward = stats.episode_rewards[i_episode - 1]
 		state = env.reset()
@@ -206,7 +207,6 @@ def sarsa(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.1, epsilo
 	return stats
 
 
-
 def expected_sarsa(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.1, epsilon_decay=1.0):
 
 	#q-learning algorithm with linear function approximation here
@@ -217,7 +217,7 @@ def expected_sarsa(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.
 		episode_rewards=np.zeros(num_episodes))  
 
 	for i_episode in range(num_episodes):
-		print "Episode Number, Q Learning Linear Approximator CartPole:", i_episode
+		print "Episode Number, Expected SARSA:", i_episode
 		#agent policy based on the greedy maximisation of Q
 		policy = make_epsilon_greedy_policy(estimator, epsilon * epsilon_decay**i_episode, env.action_space.n)
 		last_reward = stats.episode_rewards[i_episode - 1]
@@ -270,7 +270,7 @@ def two_step_tree_backup(env, estimator, num_episodes, discount_factor=1.0, epsi
 		episode_rewards=np.zeros(num_episodes))  
 
 	for i_episode in range(num_episodes):
-		print "Episode Number, Q Learning Linear Approximator CartPole:", i_episode
+		print "Episode Number, Two Step Tree Backup:", i_episode
 		#agent policy based on the greedy maximisation of Q
 		policy = make_epsilon_greedy_policy(estimator, epsilon * epsilon_decay**i_episode, env.action_space.n)
 		last_reward = stats.episode_rewards[i_episode - 1]
@@ -330,7 +330,6 @@ def two_step_tree_backup(env, estimator, num_episodes, discount_factor=1.0, epsi
 
 
 
-
 """
 On Policy Q Sigma Algorithm with Linear Function Approximator
 """
@@ -344,7 +343,7 @@ def Q_Sigma_On_Policy(env, estimator, num_episodes, discount_factor=1.0, epsilon
 		episode_rewards=np.zeros(num_episodes))  
 
 	for i_episode in range(num_episodes):
-		print "Episode Number, Q Learning Linear Approximator CartPole:", i_episode
+		print "Episode Number, Q(sigma):", i_episode
 		#agent policy based on the greedy maximisation of Q
 		policy = make_epsilon_greedy_policy(estimator, epsilon * epsilon_decay**i_episode, env.action_space.n)
 
@@ -397,6 +396,10 @@ def Q_Sigma_On_Policy(env, estimator, num_episodes, discount_factor=1.0, epsilon
 
 
 
+
+
+
+
 def save_cum_rwd(stats, smoothing_window=1, noshow=False):
 
 
@@ -409,19 +412,69 @@ def save_cum_rwd(stats, smoothing_window=1, noshow=False):
 
 
 
+
+def plot_episode_stats(stats1, stats2, stats3, stats4, stats5, smoothing_window=200, noshow=False):
+
+	#higher the smoothing window, the better the differences can be seen
+
+    # Plot the episode reward over time
+    fig = plt.figure(figsize=(20, 10))
+    rewards_smoothed_1 = pd.Series(stats1.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
+    rewards_smoothed_2 = pd.Series(stats2.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
+    rewards_smoothed_3 = pd.Series(stats3.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
+    rewards_smoothed_4 = pd.Series(stats4.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
+    rewards_smoothed_5 = pd.Series(stats5.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
+
+
+    cum_rwd_1, = plt.plot(rewards_smoothed_1, label="SARSA")
+    cum_rwd_2, = plt.plot(rewards_smoothed_2, label="Q Learning")
+    cum_rwd_3, = plt.plot(rewards_smoothed_3, label="Expected SARSA")
+    cum_rwd_4, = plt.plot(rewards_smoothed_4, label="2-Step Tree Backup")
+    cum_rwd_5, = plt.plot(rewards_smoothed_5, label="Q(sigma)")
+
+
+    plt.legend(handles=[cum_rwd_1, cum_rwd_2, cum_rwd_3, cum_rwd_4, cum_rwd_5])
+    plt.xlabel("Epsiode")
+    plt.ylabel("Epsiode Reward (Smoothed)")
+    plt.title("Comparing Algorithms with Linear Function Approximator")
+    plt.show()
+
+
+    return fig
+
+
+
+
+
 def main():
 	estimator = Estimator()
-	num_episodes = 500
-	stats = Q_Sigma_On_Policy(env, estimator, num_episodes, epsilon=0.1)
+	num_episodes = 2000
 
-	cum_rwd = save_cum_rwd(stats, smoothing_window = 1)
+	print "SARSA"
+	stats_sarsa = sarsa(env, estimator, num_episodes, epsilon=0.1)
+	
+	print "Q Learning"
+	stats_q_learning = q_learning(env, estimator, num_episodes, epsilon=0.1)
 
-	plotting.plot_episode_stats(stats)
+	print "Expected SARSA"
+	stats_expected_sarsa = expected_sarsa(env, estimator, num_episodes, epsilon=0.1)
+
+	print "Two Step Tree Backup"
+	stats_2_tree_backup = two_step_tree_backup(env, estimator, num_episodes, epsilon=0.1)
+
+	print "Q Sigma"
+	stats_q_sigma = Q_Sigma_On_Policy(env, estimator, num_episodes, epsilon=0.1)
+
+
+	plot_episode_stats(stats_sarsa, stats_q_learning, stats_expected_sarsa, stats_2_tree_backup, stats_q_sigma)
+
 	env.close()
-
-
 
 if __name__ == '__main__':
 	main()
+
+
+
+
 
 
