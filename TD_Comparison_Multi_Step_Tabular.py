@@ -13,17 +13,17 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
-from collections import defaultdict
-from lib.envs.cliff_walking import CliffWalkingEnv
-from lib import plotting
-env = CliffWalkingEnv()
-
-
-
 # from collections import defaultdict
-# from lib.envs.gridworld import GridworldEnv
+# from lib.envs.cliff_walking import CliffWalkingEnv
 # from lib import plotting
-# env = GridworldEnv()
+# env = CliffWalkingEnv()
+
+
+
+from collections import defaultdict
+from lib.envs.gridworld import GridworldEnv
+from lib import plotting
+env = GridworldEnv()
 
 
 # from collections import defaultdict
@@ -240,68 +240,6 @@ def q_learning_4_step_TD(env, num_episodes, discount_factor=1.0, alpha = 0.5, ep
 	return Q, stats
 
 
-
-def double_q_learning(env, num_episodes, discount_factor=1.0, alpha = 0.5, epsilon = 0.1):
-
-	#Off Policy TD - Find Optimal Greedy policy while following epsilon-greedy policy
-
-	Q_A = defaultdict(lambda : np.zeros(env.action_space.n))
-
-	Q_B = defaultdict(lambda : np.zeros(env.action_space.n))
-
-	Total_Q = defaultdict(lambda : np.zeros(env.action_space.n))
-
-	stats = plotting.EpisodeStats(episode_lengths=np.zeros(num_episodes),episode_rewards=np.zeros(num_episodes))  
-
-	#choose a based on Q_A + Q_B
-	policy = make_epsilon_greedy_policy(Total_Q, epsilon, env.action_space.n)
-
-
-	for i_episode in range(num_episodes):
-
-		state = env.reset()
-
-		for t in itertools.count():
-
-			#choose a from policy derived from Q1 + Q2 (epsilon greedy here)
-			action_probs = policy(state)
-			action = np.random.choice(np.arange(len(action_probs)), p=action_probs)			
-			# with taken aciton, observe the reward and the next state
-			next_state, reward, done, _, = env.step(action)
-
-			stats.episode_rewards[i_episode] += reward
-			stats.episode_lengths[i_episode] = t
-
-
-			#choose randomly either update A or update B
-			#randmly generate a for being 1 or 2
-			random_number = random.randint(1,2)
-
-			if random_number == 1:
-				best_action_Q_A = np.argmax(Q_A[next_state])
-				TD_Target_A = reward + discount_factor * Q_B[next_state][best_action_Q_A]
-				TD_Delta_A = TD_Target_A - Q_A[state][action]
-				Q_A[state][action] += alpha * TD_Delta_A
-
-			elif random_number ==2:
-				best_action_Q_B = np.argmax(Q_B[next_state])
-				TD_Target_B = reward + discount_factor * Q_A[next_state][best_action_Q_B]
-				TD_Delta_B = TD_Target_B - Q_B[state][action]
-				Q_B[state][action] += alpha * TD_Delta_B
-
-
-			if done:
-				break
-
-			state = next_state
-			Total_Q[state][action] = Q_A[state][action] + Q_B[state][action]
-
-
-	return Total_Q, stats
-
-
-
-
 """
 Two Step Tree Backup
 """
@@ -454,7 +392,7 @@ def three_step_tree_backup(env, num_episodes, discount_factor=1.0, alpha=0.5, ep
 
 
 
-def plot_episode_stats(stats1, stats2, smoothing_window=200, noshow=False):
+def plot_episode_stats(stats1, stats2, stats3, stats4, stats5, smoothing_window=200, noshow=False):
 
 	#higher the smoothing window, the better the differences can be seen
 
@@ -465,20 +403,19 @@ def plot_episode_stats(stats1, stats2, smoothing_window=200, noshow=False):
     rewards_smoothed_3 = pd.Series(stats3.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
     rewards_smoothed_4 = pd.Series(stats4.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
     rewards_smoothed_5 = pd.Series(stats5.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
-    rewards_smoothed_6 = pd.Series(stats6.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
 
 
-    cum_rwd_1, = plt.plot(rewards_smoothed_1, label="Double Q with Epsilon Greedy")
-    cum_rwd_2, = plt.plot(rewards_smoothed_2, label="Double Q with Random Policy")
-    cum_rwd_3, = plt.plot(rewards_smoothed_3, label="Q Learning, Discount Factor = 10.0")
-    cum_rwd_4, = plt.plot(rewards_smoothed_4, label="Double Q Learning, Discount Factor = 1.0")
-    cum_rwd_5, = plt.plot(rewards_smoothed_5, label="Double Q Learning, Discount Factor = 5.0")
-    cum_rwd_6, = plt.plot(rewards_smoothed_6, label="Double Q Learning, Discount Factor = 10.0")
+    cum_rwd_1, = plt.plot(rewards_smoothed_1, label="2-Step SARSA")
+    cum_rwd_2, = plt.plot(rewards_smoothed_2, label="2-Step Q Learning")
+    cum_rwd_3, = plt.plot(rewards_smoothed_3, label="4-Step Q Learning")
+    cum_rwd_4, = plt.plot(rewards_smoothed_4, label="2-Step Tree Backup")
+    cum_rwd_5, = plt.plot(rewards_smoothed_5, label="3-Step Tree Backup")
 
-    plt.legend(handles=[cum_rwd_1, cum_rwd_2])
+
+    plt.legend(handles=[cum_rwd_1, cum_rwd_2, cum_rwd_3, cum_rwd_4, cum_rwd_5])
     plt.xlabel("Epsiode")
     plt.ylabel("Epsiode Reward (Smoothed)")
-    plt.title("Comparing Q Learning and Double Q Learning for Epsilon parameters")
+    plt.title("Comparing Multi-Step TD Learning Algorithms on Grid World Environment")
     plt.show()
 
 
@@ -489,43 +426,23 @@ def plot_episode_stats(stats1, stats2, smoothing_window=200, noshow=False):
 def main():
 
 	Number_Episodes = 1500
-	print "SARSA"
-	Sarsa_Q, stats_sarsa= sarsa(env, Number_Episodes)
+	print "SARSA 2 Step"
+	SARSA_2_Step, stats_sarsa_2_step = sarsa_2_step_TD(env, Number_Episodes)
 	
-	print "Q-Learning"
-	Q_learning_Q, stats_q_learning= q_learning(env, Number_Episodes)
+	print "Q-Learning 2 Step"
+	Q_Learning_2_Step, stats_q_learning_2_step= q_learning_2_step_TD(env, Number_Episodes)
 	
-	print "2 step SARSA"
-	Sarsa_Q_2_step_TD, stats_sarsa_2_step = sarsa_2_step_TD(env, Number_Episodes)
+	print "Q Learning 4 Step"
+	Q_Learning_4_Step, stats_q_learning_4_step = q_learning_4_step_TD(env, Number_Episodes)
 
-	print "2 step Q-Learning"
-	Q_learning_Q_2_step_TD, stats_q_learning_2_step = q_learning_2_step_TD(env, Number_Episodes)
+	print "Tree Backup 2 Step"
+	TB_2_Step, stats_TB_2_step = two_step_tree_backup(env, Number_Episodes)
 
-	print "Double Q Learning"
-	Doube_Q, stats_Double_Q = double_q_learning(env, Number_Episodes, discount_factor=1.0, alpha = 0.5, epsilon = 0.9)
-
-	plot_episode_stats(stats_sarsa, stats_q_learning, stats_sarsa_2_step, stats_q_learning_2_step, stats_Double_Q)
+	print "Tree Backup 3 Step"
+	TB_3_Step, stats_TB_3_step = three_step_tree_backup(env, Number_Episodes)
 
 
-
-
-	# Number_Episodes = 1500
-	
-	# # print "Q-Learning"
-	# # Q_learning_Q, stats_q_learning= q_learning(env, Number_Episodes, discount_factor=1.0, alpha = 0.5, epsilon = 0.1)
-	# # Q_learning_Q, stats_q_learning2= q_learning(env, Number_Episodes, discount_factor=5.0, alpha = 0.5, epsilon = 0.1)
-	# # Q_learning_Q, stats_q_learning3= q_learning(env, Number_Episodes, discount_factor=10.0, alpha = 0.5, epsilon = 0.1)
-
-
-	# print "Double Q Learning"
-	# Doube_Q, stats_Double_Q = double_q_learning(env, Number_Episodes, discount_factor=1.0, alpha = 0.5, epsilon = 0.9)
-	# Doube_Q, stats_Double_Q2 = double_q_learning_random_policy(env, Number_Episodes, discount_factor=5.0, alpha = 0.5, epsilon = 0.9)
-	# # Doube_Q, stats_Double_Q3 = double_q_learning(env, Number_Episodes, discount_factor=10.0, alpha = 0.5, epsilon = 0.9)
-
-	# plot_episode_stats(stats_Double_Q, stats_Double_Q2)
-
-
-
+	plot_episode_stats(stats_sarsa_2_step, stats_q_learning_2_step, stats_q_learning_4_step, stats_TB_2_step, stats_TB_3_step)
 
 
 
