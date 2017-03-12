@@ -109,33 +109,38 @@ class Estimator():
 
 def sarsa_2_step_TD(env,estimator, num_episodes, discount_factor=1.0, epsilon=0.015,epsilon_decay=1.0):
      stats = plotting.EpisodeStats(episode_lengths=np.zeros(num_episodes),episode_rewards=np.zeros(num_episodes))
+     policy=make_epsilon_greedy_policy(estimator, epsilon, env.action_space.n)
      for i_episode in range (num_episodes):
-         policy=make_epsilon_greedy_policy(estimator, epsilon * epsilon_decay**i_episode, env.action_space.n)
+         
         # last_reward = stats.episode_rewards[i_episode - 1]
          state=env.reset()
          action_probs=policy(state)
          action=np.random.choice(np.arange(len(action_probs)), p = action_probs)
          
          for t in itertools.count():
-            next_state,reward,_,_=env.step(action)
+            
+            next_state,reward,done,_ = env.step(action)
+            
+            if done:
+                print('Episode is ',i_episode)
+                break
             next_action_probs=policy(next_state)
             next_action=np.random.choice(np.arange(len(action_probs)), p = next_action_probs)
-            next_2_state, reward_2_step, done, _ = env.step(next_action)
+            next_2_state, reward_2_step, _, _ = env.step(next_action)
             next_2_action_probs = policy(next_2_state)
             next_2_action = np.random.choice(np.arange(len(next_2_action_probs)), p = next_2_action_probs)
-            stats.episode_rewards[i_episode] += reward
+            
+           # print(stats.episode_rewards[i_episode])
+            stats.episode_rewards[i_episode]+=reward
             stats.episode_lengths[i_episode] = t
             Q_val=estimator.predict(next_2_state)
             Q_val=Q_val[next_2_action]
-            td_target=reward + discount_factor * reward_2_step + discount_factor*discount_factor*(Q_val)
+            td_target=reward + discount_factor*reward_2_step + discount_factor*discount_factor*Q_val
             estimator.update(state,action,td_target)
-            if done:
-                print('Episode no',i_episode)
-                break
             state=next_state
             action=next_action
      return stats
-def Q_learning_2_step_TD(env,estimator,num_episodes,discount_factor=1,epsilon=0.1):
+def Q_learning_2_step_TD(env,estimator,num_episodes,discount_factor=1,epsilon=0.015,epsilon_decay=1.0):
     stats = plotting.EpisodeStats(episode_lengths=np.zeros(num_episodes),episode_rewards=np.zeros(num_episodes))
     policy=make_epsilon_greedy_policy(estimator, epsilon, env.action_space.n)
     for i_episode in range(num_episodes):
@@ -143,24 +148,25 @@ def Q_learning_2_step_TD(env,estimator,num_episodes,discount_factor=1,epsilon=0.
         for t in itertools.count():
             
             action_probs=policy(state)
-            action=np.random.choice(np.arange(len(action_probs)), p = action_probs)
+            action=np.random.choice(np.arange(len(action_probs)),p = action_probs)
             next_state,reward,done,_=env.step(action)
+            if done:
+                print('Episode is ',i_episode)
+                break
             next_action_probs=policy(next_state)
             next_action=np.random.choice(np.arange(len(action_probs)), p = next_action_probs)
-            next_2_state,reward_2_step,done,_=env.step(next_action)
-            stats.episode_rewards[i_episode] += reward_2_step
+            next_2_state,reward_2_step,_,_=env.step(next_action)
+            stats.episode_rewards[i_episode] += reward
             stats.episode_lengths[i_episode] = t
             Q_val=estimator.predict(next_2_state)
             best_action=np.argmax(Q_val)
             td_target=reward+discount_factor*reward_2_step+discount_factor*discount_factor*Q_val[best_action]
             estimator.update(state,action,td_target)
-            if done:
-                print('Episode is ',i_episode)
-                break
+            
             state=next_state
     return(stats)
 
-def two_step_tree_backup(env,estimator, num_episodes, discount_factor=1.0, alpha=0.5, epsilon=0.1):
+def two_step_tree_backup(env,estimator, num_episodes, discount_factor=1.0,epsilon=0.1,epsilon_decay=1.0):
 
 
    
@@ -181,7 +187,11 @@ def two_step_tree_backup(env,estimator, num_episodes, discount_factor=1.0, alpha
             action = np.random.choice(np.arange(len(action_probs)), p = action_probs)
 
             #reward and next state based on the action chosen according to epislon greedy policy
-            next_state, reward, _ , _ = env.step(action)
+            next_state, reward, done , _ = env.step(action)
+            
+            if done:
+                print('Episode is ',i_episode)
+                break
             
             #reward by taking action under the policy pi
             stats.episode_rewards[i_episode] += reward
@@ -194,7 +204,7 @@ def two_step_tree_backup(env,estimator, num_episodes, discount_factor=1.0, alpha
             V = np.sum(next_action_probs * estimator.predict(next_state))
 
 
-            next_next_state, next_reward, done, _ = env.step(next_action)
+            next_next_state, next_reward, _, _ = env.step(next_action)
     
             next_next_action_probs = policy(next_next_state)
             next_next_action = np.random.choice(np.arange(len(next_next_action_probs)), p = next_next_action_probs)
@@ -219,31 +229,89 @@ def two_step_tree_backup(env,estimator, num_episodes, discount_factor=1.0, alpha
 
             td_target = reward + discount_factor * V +  discount_factor *  next_action_selection_probability * Delta
             estimator.update(state,action,td_target)
-
-
-
-            if done:
-                print('Episode is ',i_episode)
-                break
-
             state = next_state
 
     return stats
-def plot_episode_stats(stats1,stats2,stats3,smoothing_window=200,noshow=False):
+def  sarsa(env,estimator, num_episodes, discount_factor=1.0, epsilon=0.015,epsilon_decay=1.0):
+    stats = plotting.EpisodeStats(episode_lengths=np.zeros(num_episodes),episode_rewards=np.zeros(num_episodes))  
+    policy = make_epsilon_greedy_policy(estimator, epsilon, env.action_space.n)
+    for i_episode in range(num_episodes):
+        state=env.reset()
+        action_probs=policy(state)
+        action=np.random.choice(np.arange(len(action_probs)), p = action_probs)
+        for t in itertools.count():
+            next_state,reward,done,_=env.step(action)
+            if done:
+                print('Episode is ',i_episode)
+                break
+            stats.episode_rewards[i_episode] += reward
+            
+            next_action_probs=policy(next_state)
+            next_action=np.random.choice(np.arange(len(action_probs)), p = next_action_probs)
+            Qval=estimator.predict(next_state)
+            Qval=Qval[next_action]
+            td_target=reward+discount_factor*Qval
+            estimator.update(state,action,td_target)
+            
+            state=next_state
+            action=next_action
+    return stats
+        
+            
+        
+
+
+def expected_sarsa(env, estimator, num_episodes, discount_factor=1.0, epsilon=0.015, epsilon_decay=1.0):
+    stats = plotting.EpisodeStats(episode_lengths=np.zeros(num_episodes),episode_rewards=np.zeros(num_episodes))
+    
+    for i_episode in range (num_episodes):
+        policy=make_epsilon_greedy_policy(estimator, epsilon * epsilon_decay**i_episode, env.action_space.n)
+        #last_reward = stats.episode_rewards[i_episode - 1]
+        state=env.reset()
+        next_action=None
+        for j in itertools.count():
+            cum_reward=0
+            if next_action is None:
+                action_probs=policy(state)
+                action = np.random.choice(np.arange(len(action_probs)), p=action_probs)
+            else:
+                action=next_action
+            
+            next_state, reward, done, _ = env.step(action)
+            
+            cum_reward+=reward
+            stats.episode_rewards[i_episode] += reward
+            
+            stats.episode_lengths[i_episode] = j
+            Q_val=estimator.predict(next_state)
+            action_probs=policy(next_state)
+            td_target=reward+discount_factor*sum(action_probs*Q_val)
+            estimator.update(state,action,td_target)
+            if done:
+                print('Episode no',i_episode)
+                
+                break
+            state=next_state
+    return stats    
+    
+def plot_episode_stats(stats1,stats2,stats3,stats4,stats5,smoothing_window=200,noshow=False):
     fig = plt.figure(figsize=(20, 10))
     rewards_smoothed_1 = pd.Series(stats1.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
     rewards_smoothed_2 = pd.Series(stats2.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
     rewards_smoothed_3 = pd.Series(stats3.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
-
+    rewards_smoothed_4 = pd.Series(stats4.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
+    rewards_smoothed_5 = pd.Series(stats5.episode_rewards).rolling(smoothing_window, min_periods=smoothing_window).mean()
     cum_rwd_1, = plt.plot(rewards_smoothed_1, label="Two step SARSA with Epsilon Greedy")
     cum_rwd_2, = plt.plot(rewards_smoothed_2, label="Two step Q_Learning with Epsilon Greedy")
     cum_rwd_3, = plt.plot(rewards_smoothed_3, label="Two step Tree backup with Epsilon Greedy")
+    cum_rwd_4, = plt.plot(rewards_smoothed_4, label="SARSA with Epsilon Greedy")
+    cum_rwd_5, = plt.plot(rewards_smoothed_5, label="Expected SARSA with Epsilon Greedy")
     
 
-    plt.legend(handles=[cum_rwd_1, cum_rwd_2, cum_rwd_3])
+    plt.legend(handles=[cum_rwd_1, cum_rwd_2, cum_rwd_3, cum_rwd_4, cum_rwd_5])
     plt.xlabel("Epsiode")
     plt.ylabel("Epsiode Reward (Smoothed)")
-    plt.title("Comparing 2 step SARSA and 2 step Q Learning and Two step Tree Backup")
+    plt.title("Comparing TD Algorithms")
     plt.show()
 
 
@@ -254,16 +322,19 @@ def plot_episode_stats(stats1,stats2,stats3,smoothing_window=200,noshow=False):
         
 def main():
     estimator=Estimator()
-    number_of_episodes=500
+    number_of_episodes=1000
     print('Two Step Sarsa')
-    stats_sarsa = sarsa_2_step_TD(env,estimator, number_of_episodes, discount_factor=1.0, epsilon=0.1,epsilon_decay=1.0)
-    plotting.plot_episode_stats(stats_sarsa, smoothing_window=25)
-    #print('Two Step Q Learning')
-    #stats_Q=Q_learning_2_step_TD(env,estimator,number_of_episodes,discount_factor=1,epsilon=0.1)
-    #print('Two Step Tree Backup')
-    #stats_tree=two_step_tree_backup(env,estimator, number_of_episodes, discount_factor=1.0, alpha=0.5, epsilon=0.1)
-    
-    #plot_episode_stats(stats_sarsa,stats_Q,stats_tree)
+    stats_sarsa_2_step = sarsa_2_step_TD(env,estimator, number_of_episodes, discount_factor=1.0, epsilon=0.015,epsilon_decay=1.0)
+    plotting.plot_episode_stats(stats_sarsa_2_step,smoothing_window=25)
+    print('Two Step Q Learning')
+    stats_Q=Q_learning_2_step_TD(env,estimator,number_of_episodes,discount_factor=1,epsilon=0.015,epsilon_decay=1.0)
+    print('Two Step Tree Backup')
+    stats_tree=two_step_tree_backup(env,estimator, number_of_episodes, discount_factor=1.0, epsilon=0.1)
+    print('SARSA')
+    stats_sarsa=sarsa(env,estimator, number_of_episodes, discount_factor=1.0, epsilon=0.015,epsilon_decay=1.0)
+    print('Expected SARSA')
+    stats_expected_sarsa=expected_sarsa(env, estimator, number_of_episodes, discount_factor=1.0, epsilon=0.015, epsilon_decay=1.0)
+    plot_episode_stats(stats_sarsa_2_step,stats_Q,stats_tree,stats_sarsa,stats_expected_sarsa)
     
     
 main()
