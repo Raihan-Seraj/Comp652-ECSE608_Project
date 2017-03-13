@@ -1,0 +1,34 @@
+TO DO :
+
+1. Q(sigma) with Linear Function Approximator:
+
+- Different off policy behaviour policies
+- Sigma as a function of state
+- Sigma as a decaying parameter - sampling first and expectation later (or vice versa)
+- Effect of Step Size and Epsilon Parameters
+- Demonstrate on TWO Other environments - (other than the MountainCar)
+
+
+2. Q(sigma), Tree Backup and various algos (as per Notes below) on Tabular Environments
+
+
+
+3. Q(sigma) and Tree Backup on DQNs 
+- CartPole does not seem to work
+- try DQNs on MountainCar first
+- and then Atari environments
+
+
+
+Note : Algorithms for Comparison
+
+1. On Policy Expected SARSA
+2. Multi-Step Tree Backup (2 step, 3 step)
+3. Off Policy Expected SARSA
+4. Multi-Step Off Policy Expected SARSA
+5. Off Policy Q(sigma) 
+6. Multi-Step Off Policy Q(sigma)
+7. On Policy Q(sigma)
+8. Multi-Step On Policy Q(sigma)
+9. Off Policy Multi-Step SARSA
+10. Off Policy Multi-Step Q Learning and SARSA (as baseline)

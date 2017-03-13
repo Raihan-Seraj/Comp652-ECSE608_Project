@@ -1,0 +1,110 @@
+Algorithms :
+
+- Q Learning
+- SARSA
+- Expected SARSA
+- Multi-Step Tree Backup
+- Q(sigma)
+
+
+
+Paper on Q(sigma) : https://arxiv.org/pdf/1703.01327.pdf 
+
+Paper on Expected SARSA :
+A Theoretical and Empirical Analysis of Expected SARSA : http://www.cs.ox.ac.uk/people/shimon.whiteson/pubs/vanseijenadprl09.pdf
+
+
+
+Good code :
+1. Comparison of Expected SARSA with Q Learning and SARSA : https://github.com/rllabmcgill/rlcourse-february-10-Pulkit-Khandelwal/blob/master/td_learning_3_cliff_walking.ipynb
+
+2. Off-Policy Q(sigma) code : https://github.com/rllabmcgill/rlcourse-february-17-DjAntaki/blob/master/algorithms/qsigma.py
+(Extend similar with function approximators)
+
+3. Empirical Analysis of Q(sigma)
+https://github.com/rllabmcgill/rlcourse-february-24-NicolasAG/blob/master/presentation4.pdf
+
+
+
+Tree Backup was originally proposed to perform off policy evaluation when the behaviour policy is non-Markovian.
+
+
+https://arxiv.org/pdf/1703.01327.pdf 
+In this paper, we
+re-present Tree-backup as a natural multi-step extension of
+Expected Sarsa. Instead of performing the updates with
+entirely sampled transitions as with multi-step Sarsa, Treebackup
+performs the update using the expected values of
+all the actions at each transition.
+
+
+Q(sigma) - unifies and generalises multi-step TD control methods
+
+Degree of sampling - controlled by sigma parameter
+
+Sigma = 1 -- SARSA (Full Sampling)
+Sigma = 0 -- Tree Backup (pure expectation)
+Intermediate values of Sigma - mixture of sampling and expectation
+(can also vary sigma dynamically)
+
+Q(sigma) paper - NOT DONE with Eligibility Traces
+Scope of work : Extend Q(sigma) and Tree Backup algorithm with Eligibility Traces? (relate to Retrace Lambda)
+However, Eligibility Traces don't work well with DQNs - need to find a better way
+
+
+** Q(sigma) generally applicable for both on-policy and off-policy
+
+Experiments in the paper : In our experiments
+we study problems that require tabular solution
+methods and a problem that requires an approximate solution
+method using function approximation.
+- In contrast with Sarsa,
+Expected Sarsa behaves according the behavior policy, but
+updates its estimate by taking an expectation of Q(s,a) 
+
+A drawback to using importance sampling to learn offpolicy
+is that it can create high variance which must be
+compensated for by using small step sizes; this can slow
+learning
+
+
+Since expected sarsa subsumes Q-learning, Treebackup
+can also be thought of as a multi-step generalization
+of Q-learning if the target policy is the greedy policy
+with respect to the action-value function.
+
+
+
+Advantage of Tree Backup:
+Can learn off-policy without the need of importance sampling
+Since the importance sampling ratio does not need to be computed,
+the behaviour policy does not need to be stationary
+
+
+Q(sigma) Algorithm :
+Unifies SARSA and Expected SARSA
+- since it combines with Expected SARSA - it can be extended for Tree Backup algorithm
+
+
+Dynamically varying sigma in Q(sigma) performed well - compared to
+sigma =1 and sigma=0 
+Sigma can be varied as a function of number of episodes
+or number of steps etc etc
+
+In addition,
+we presented simple way of dynamically adjusting σ which
+outperformed any fixed degree of sampling.
+
+
+
+POSSIBLE RESEARCH DIRECTIONS ::
+- Q(SIGMA) AND TREE BACKUP WITH ELIGIBILITY TRACES
+- Q(SIGMA) EVALUATED ON OFF-POLICY PROBLEMS
+- SCHEMES FOR DYANAMICALLY VARYING SIGMA -- intuition : balance between sampling and expectation
+  (example : can we change sigma as a function of states or rewards or measure of the learning progress)
+
+- TO DO Experiments :
+- Demonstrate differences in tabular methods 
+- Differences with linear function approximators (try with different variations : RBF, Tile Coding)
+- Experiment with DQNs on Atari Games Environments (if Expected SARSA is expected to work with DQNs, try it with Q(sigma) and Tree Backup Algorithms)
+
