@@ -217,7 +217,7 @@ def Q_Sigma_Off_Policy_3_Step(env, theta, num_episodes, discount_factor=1.0, eps
 
 			sigma_t_3 = binomial_sigma(probability)
 
-			Delta_t_2 = next_next_reward + discount_factor * (sigma_t_3 * q_values_next_next_next_state_next_next_next_action + (1 - sigma) * V_t_3 ) -  q_values_next_next_state_next_next_action
+			Delta_t_2 = next_next_reward + discount_factor * (sigma_t_3 * q_values_next_next_next_state_next_next_next_action + (1 - sigma_t_3) * V_t_3 ) -  q_values_next_next_state_next_next_action
 
 
 
