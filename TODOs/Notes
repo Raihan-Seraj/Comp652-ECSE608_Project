@@ -12,6 +12,9 @@ http://incompleteideas.net/rlai.cs.ualberta.ca/RLAI/RLtoolkit/tilecoding.html
 http://incompleteideas.net/rlai.cs.ualberta.ca/RLAI/RLtoolkit/RLtoolkit1.0.html#downloads
 
 
+Environments:
+CATCH environment from : https://github.com/rllabmcgill/rlcourse-march-10-joshromoff
+
 Paper on Q(sigma) : https://arxiv.org/pdf/1703.01327.pdf 
 
 Paper on Expected SARSA :
